@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(stm_sd_tests LANGUAGES C)
+enable_testing()
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/.." component)
+add_executable(stm_sd_tests test_sd.c)
+target_compile_options(stm_sd_tests PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(stm_sd_tests PRIVATE stm_sd)
+add_test(NAME stm_sd_tests COMMAND stm_sd_tests)
