@@ -22,14 +22,19 @@ static stm_err_t initialize(void *opaque, uint32_t max_clock_hz, sd_geometry_t *
     if (!ctx || !ctx->hal || !geometry || !ctx->clock_hz || ctx->clock_hz > max_clock_hz) {
         return STM_ERR_INVALID_CONFIG;
     }
+    /* CubeMX may have initialized this application-owned handle already.
+     * Match the board reference flow: deinitialize the previous card session
+     * before starting a fresh HAL_SD_Init sequence. This avoids re-entering
+     * HAL_SD_Init with a live card state and keeps BusWide handling coherent. */
+    if (ctx->hal->State != HAL_SD_STATE_RESET) {
+        (void)HAL_SD_DeInit(ctx->hal);
+    }
+#ifdef SDMMC_BUS_WIDE_4B
+    ctx->hal->Init.BusWide = ctx->wide_bus ? SDMMC_BUS_WIDE_4B : SDMMC_BUS_WIDE_1B;
+#endif
+    /* HAL_SD_Init() performs the one required SD ACMD6 bus-width switch. */
     stm_err_t e = status(ctx, HAL_SD_Init(ctx->hal));
     if (e) return e;
-#ifdef SDMMC_BUS_WIDE_4B
-    if (ctx->wide_bus) {
-        e = status(ctx, HAL_SD_ConfigWideBusOperation(ctx->hal, SDMMC_BUS_WIDE_4B));
-        if (e) return e;
-    }
-#endif
     HAL_SD_CardInfoTypeDef card;
     HAL_SD_GetCardInfo(ctx->hal, &card);
     if (!card.BlockSize || !card.BlockNbr) return STM_ERR_INVALID_CONFIG;
