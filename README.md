@@ -2,7 +2,19 @@
 
 `stm_sd` 是同步 SD/SD NAND 块设备核心，采用“器件描述符 + host 操作表 + 实例上下文”分层。核心只依赖 C11 和 `stm_common`，不依赖 STM32 HAL、RTOS、RTT 或日志；SDMMC 适配器单独编译。
 
-当前发布版本为 **v1.0.0**。内置 `sd_generic` 和 `sd_xczsdnand4gas` 两个默认速率描述符，默认速率上限为 25 MHz；后者只表达 XCZSDNAND4GAS 的已确认默认模式限制，不伪造卡的容量或身份。卡容量、512 字节逻辑扇区和写保护状态由 host 初始化返回。
+当前源码内置 `sd_generic` 和 `sd_xczsdnand4gas` 两个默认速率描述符，默认速率上限为 25 MHz；后者只表达 XCZSDNAND4GAS 的已确认默认模式限制，不伪造卡的容量或身份。卡容量、512 字节逻辑扇区和写保护状态由 host 初始化返回。
+
+当前发布 **v1.0.2** 为文档补丁，补充支持的 Driver 清单；驱动源码/API 与 v1.0.1 相同，不新增实板验证结论。
+
+## 支持的 Driver
+
+| 类型 | Driver / 型号 | 源码或接入入口 | 支持范围与限制 |
+| --- | --- | --- | --- |
+| SD 器件描述符 | 通用 SD / TF 卡默认速率模式 | [`sd_generic`](src/devices/sd_generic.c) | 默认速率上限 25 MHz；容量由 host 初始化查询，不按卡品牌预置容量 |
+| SD NAND 器件描述符 | XCZSDNAND4GAS | [`sd_xczsdnand4gas`](src/devices/xczsdnand4gas.c) | SD 协议、默认速率上限 25 MHz；描述符只约束速率，不自动识别该型号或伪造容量 |
+| 控制器后端 | STM32 HAL SDMMC | [`sdmmc_bind()`](adapters/stm32_hal/sdmmc.h)；target `stm_sd_sdmmc` | `STM_SD_WITH_SDMMC=ON`；同步块读写；1-bit / 可选 4-bit 总线；512 B 逻辑扇区 |
+
+当前没有 SPI 模式 SD、eMMC 或裸 NAND Driver。`sd_generic` 不是所有卡的兼容性/板测保证；自定义 host 是扩展契约。实际 SD 时钟由板级提供，不能把 HAL 编译或主机测试通过等同于卡、布线和供电验证通过。
 
 ## 接入
 
